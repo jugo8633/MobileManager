@@ -5,6 +5,7 @@ import java.util.List;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.os.Build;
+import android.os.Handler;
 import android.telephony.CellInfo;
 import android.telephony.CellLocation;
 import android.telephony.PhoneStateListener;
@@ -16,12 +17,24 @@ import android.util.Log;
 
 public class CustomPhoneStateListener extends PhoneStateListener
 {
-	public static String	LOG_TAG	= "CustomPhoneStateListener";
-	Context					mContext;
+	public static String	LOG_TAG			= "CustomPhoneStateListener";
+	Context					mContext		= null;
+	Handler					mHandler		= null;
+	EventHandler			mEventHandler	= null;
 
-	public CustomPhoneStateListener(Context context)
+	public CustomPhoneStateListener(Context context, Handler handler)
 	{
 		mContext = context;
+		mHandler = handler;
+		mEventHandler = new EventHandler(handler);
+	}
+
+	@Override
+	protected void finalize() throws Throwable
+	{
+		// TODO Auto-generated method stub
+		mEventHandler = null;
+		super.finalize();
 	}
 
 	@TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
@@ -38,6 +51,7 @@ public class CustomPhoneStateListener extends PhoneStateListener
 	{
 		// TODO Auto-generated method stub
 		super.onDataActivity(direction);
+		mEventHandler.sendMsg(PhoneEvent.EVENT_DATA_ACTIVITY, direction, 0, null);
 		switch (direction)
 		{
 		case TelephonyManager.DATA_ACTIVITY_NONE:
@@ -73,6 +87,8 @@ public class CustomPhoneStateListener extends PhoneStateListener
 		Log.i(LOG_TAG, "onServiceStateChanged: getIsManualSelection " + serviceState.getIsManualSelection());
 		Log.i(LOG_TAG, "onServiceStateChanged: getRoaming " + serviceState.getRoaming());
 
+		mEventHandler.sendMsg(PhoneEvent.EVENT_SERVICE_STATE_CHANGED, serviceState.getState(), 0, null);
+
 		switch (serviceState.getState())
 		{
 		case ServiceState.STATE_IN_SERVICE:
@@ -95,6 +111,7 @@ public class CustomPhoneStateListener extends PhoneStateListener
 	{
 		// TODO Auto-generated method stub
 		super.onCallStateChanged(state, incomingNumber);
+		mEventHandler.sendMsg(PhoneEvent.EVENT_CALL_STATE_CHANGED, state, 0, null);
 		switch (state)
 		{
 		case TelephonyManager.CALL_STATE_IDLE:
